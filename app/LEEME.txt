@@ -1,0 +1,50 @@
+PASE DE LISTA QR — Cómo convertirla en app en tu celular
+===========================================================
+
+Esta carpeta ya es una "PWA" (app web instalable). Para que la cámara
+funcione y puedas instalarla, necesita abrirse desde una dirección
+que empiece con https:// (los navegadores bloquean la cámara si no).
+La forma más rápida y gratuita es GitHub Pages.
+
+OPCIÓN RECOMENDADA: GitHub Pages (gratis, sin vencimiento)
+------------------------------------------------------------
+1. Entra a https://github.com y crea una cuenta si no tienes.
+2. Crea un repositorio nuevo, por ejemplo "pase-lista-qr"
+   (puede ser público).
+3. Sube TODOS los archivos de esta carpeta (index.html, manifest.json,
+   sw.js y la carpeta icons/) manteniendo la misma estructura, usando
+   el botón "Add file" > "Upload files" en GitHub.
+4. Ve a Settings > Pages del repositorio, y en "Branch" selecciona
+   "main" (carpeta /root) y guarda.
+5. Espera 1-2 minutos. GitHub te dará un enlace como:
+   https://tu-usuario.github.io/pase-lista-qr/
+6. Abre ese enlace desde el navegador de tu celular (Chrome en
+   Android o Safari en iPhone).
+
+INSTALAR EN EL CELULAR
+------------------------------------------------------------
+- Android (Chrome): abre el enlace, toca el menú (⋮) y elige
+  "Instalar app" o "Agregar a pantalla de inicio".
+- iPhone (Safari): abre el enlace, toca el botón compartir (□↑)
+  y elige "Agregar a pantalla de inicio".
+
+Después de instalarla, se abre como app normal, con su propio ícono,
+sin la barra del navegador, y la cámara para escanear funcionará
+porque la página quedó en https://.
+
+ALTERNATIVA SIN GITHUB: Netlify Drop
+------------------------------------------------------------
+1. Entra a https://app.netlify.com/drop
+2. Arrastra esta carpeta completa a la página.
+3. Netlify te da un enlace https:// al instante. Ábrelo en tu
+   celular e instálalo igual que arriba.
+(Con la cuenta gratuita el enlace es permanente; sin cuenta, es
+temporal y puede borrarse después de un tiempo.)
+
+IMPORTANTE SOBRE LOS DATOS
+------------------------------------------------------------
+La lista de alumnos y la asistencia se guardan en el navegador de
+ESE celular/computadora únicamente (no se sincronizan solas entre
+dispositivos). Usa los botones "Exportar a Excel" seguido para
+tener respaldo, sobre todo antes de cambiar de celular o borrar
+datos del navegador.
