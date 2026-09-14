@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pase de Lista">
+<title>Pase de Lista QR · Grupo 5°</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body{font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,Roboto,sans-serif}
+  .nav-btn{border-bottom:2px solid transparent}
+  .nav-btn.active{background:#fff;color:#4f46e5;border-color:#4f46e5;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .custom-scrollbar::-webkit-scrollbar{height:6px;width:6px}
+  .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+  @media print{
+    .print-hide{display:none!important}
+    body{background:#fff}
+    main{padding:0!important;max-width:100%!important}
+  }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen antialiased">
+
+<div class="max-w-[900px] mx-auto px-3 py-5 space-y-4">
+
+  <!-- HEADER -->
+  <header class="print-hide bg-slate-900 text-white shadow-xl rounded-xl border-b border-indigo-900/60">
+    <div class="px-5 py-4 flex items-center gap-3">
+      <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 w-12 h-12 rounded-xl shadow-md flex items-center justify-center text-xl text-amber-300">
+        <i class="fa-solid fa-qrcode"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-black tracking-wide">Pase de Lista QR</h1>
+        <p class="text-xs text-slate-300">Grupo 5° · registro automático de asistencia con código QR</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav id="tabs" class="print-hide bg-slate-50 border border-slate-200 rounded-xl px-2 pt-2 flex gap-1 overflow-x-auto custom-scrollbar">
+    <button data-tab="alumnos" class="nav-btn active px-4 py-2 font-bold text-xs rounded-t-xl text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-users text-indigo-600"></i> Alumnos</button>
+    <button data-tab="codigos" class="nav-btn px-4 py-2 font-bold text-xs rounded-t-xl text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-qrcode text-purple-600"></i> Códigos QR</button>
+    <button data-tab="escanear" class="nav-btn px-4 py-2 font-bold text-xs rounded-t-xl text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-camera text-emerald-600"></i> Escanear</button>
+    <button data-tab="calendario" class="nav-btn px-4 py-2 font-bold text-xs rounded-t-xl text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-calendar-days text-amber-600"></i> Calendario</button>
+    <button data-tab="resumen" class="nav-btn px-4 py-2 font-bold text-xs rounded-t-xl text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-chart-column text-rose-600"></i> Resumen</button>
+  </nav>
+
+  <main>
+
+    <!-- TAB: ALUMNOS -->
+    <section id="tab-alumnos" class="tab-view space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-file-import text-emerald-400"></i> Importar lista desde Excel</div>
+        <div class="p-5 space-y-3">
+          <p class="text-xs text-slate-500 leading-relaxed">Sube un archivo <b>.xlsx</b> con las columnas <b>"N.º Lista"</b> y <b>"Nombre completo"</b> (el mismo formato que genera el botón "Exportar lista a Excel" de abajo). Esto reemplaza la lista actual de alumnos por la del archivo.</p>
+          <div class="flex items-center gap-3 flex-wrap">
+            <label for="in-file-excel" class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Elegir archivo Excel</label>
+            <input id="in-file-excel" type="file" accept=".xlsx,.xls" class="hidden">
+            <span class="text-xs font-semibold" id="import-status"></span>
+          </div>
+          <p class="text-[11px] text-slate-400" id="import-origen"></p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-user-plus text-indigo-400"></i> Agregar alumno manualmente</div>
+        <div class="p-5 space-y-3">
+          <div class="flex gap-2 flex-wrap">
+            <input id="in-num" type="number" placeholder="N.º lista" class="w-28 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none">
+            <input id="in-nombre" type="text" placeholder="Nombre completo" class="flex-1 min-w-[180px] border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none">
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="btn-add-alumno" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Agregar</button>
+            <span class="text-xs font-semibold" id="add-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-list-ol text-indigo-400"></i> Lista del grupo (<span id="roster-count">0</span>)</span>
+          <button id="btn-export-roster-excel" class="border border-emerald-400 text-emerald-300 hover:bg-emerald-900/40 text-[11px] px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Exportar lista a Excel</button>
+        </div>
+        <div class="p-5" id="roster-table"><p class="text-center py-6 text-slate-400 text-sm">Aún no hay alumnos registrados.</p></div>
+      </div>
+    </section>
+
+    <!-- TAB: CODIGOS -->
+    <section id="tab-codigos" class="tab-view hidden space-y-4">
+      <div class="print-hide bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-school text-purple-400"></i> Datos para las tarjetas / PDF</div>
+        <div class="p-5 flex flex-wrap gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nombre de la escuela</label>
+            <input id="in-escuela" type="text" placeholder="Escuela Primaria..." class="border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none w-64">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Grupo</label>
+            <input id="in-grupo" type="text" placeholder="5° A" class="border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none w-28">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-qrcode text-purple-400"></i> Códigos QR para imprimir</div>
+        <div class="p-5 space-y-4">
+          <p class="text-xs text-slate-500 leading-relaxed">Cada código es único por número de lista. Pégalo en la carpeta, gafete o banca del alumno; con la cámara de la pestaña "Escanear" se le toma una foto y se registra su asistencia al instante.</p>
+          <div class="print-hide flex gap-2 flex-wrap">
+            <button class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5" id="btn-export-pdf"><i class="fa-solid fa-file-pdf"></i> Descargar PDF listo para imprimir</button>
+            <button class="border border-purple-300 text-purple-700 hover:bg-purple-50 text-xs px-4 py-2 rounded-lg font-bold flex items-center gap-1.5" id="btn-print"><i class="fa-solid fa-print"></i> Imprimir desde el navegador</button>
+            <span class="text-xs font-semibold self-center" id="pdf-status"></span>
+          </div>
+          <div class="qr-grid grid grid-cols-2 sm:grid-cols-3 gap-3" id="qr-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: ESCANEAR -->
+    <section id="tab-escanear" class="tab-view hidden space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-camera text-emerald-400"></i> Pase de lista de hoy — <span id="fecha-hoy"></span></div>
+        <div class="p-5 space-y-3">
+          <p class="text-xs text-slate-500">Activa la cámara y enfoca el código QR del alumno para tomarle la foto y marcar su asistencia al instante. La cámara solo funciona si esta página se abre con <b>https://</b> (o en <b>localhost</b>) y si le das permiso de cámara al navegador la primera vez que lo pida.</p>
+          <div class="flex gap-2">
+            <button id="btn-start-cam" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-video"></i> Activar cámara</button>
+            <button id="btn-stop-cam" class="hidden bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-video-slash"></i> Detener cámara</button>
+          </div>
+          <div id="cam-help" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-3 text-xs leading-relaxed space-y-1"></div>
+          <video id="scan-video" playsinline autoplay muted class="hidden w-full rounded-xl bg-black"></video>
+          <canvas id="scan-canvas" class="hidden"></canvas>
+          <div class="scan-status bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]" id="scan-status">Activa la cámara y muestra el código QR del alumno.</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-emerald-400"></i> Asistencia registrada hoy (<span id="count-presentes">0</span>/<span id="count-total">0</span>)</div>
+        <div class="p-5 space-y-3">
+          <div id="hoy-table"><p class="text-center py-6 text-slate-400 text-sm">Nadie registrado todavía.</p></div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <button id="btn-cerrar-dia" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-lock"></i> Cerrar pase de lista del día (marcar ausentes)</button>
+            <span class="text-xs font-semibold" id="cerrar-status"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: CALENDARIO -->
+    <section id="tab-calendario" class="tab-view hidden space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-calendar-days text-amber-400"></i> Calendario escolar oficial · Ciclo 2026-2027 (Nuevo León)</div>
+        <div class="p-5 space-y-4">
+          <p class="text-xs text-slate-500 leading-relaxed">Fechas conforme al calendario oficial de la Secretaría de Educación de Nuevo León, alineado al calendario nacional SEP para educación básica. Inicio de clases: 31 de agosto de 2026 · Fin de cursos: 9 de julio de 2027 · 185 días efectivos de clase.</p>
+          <div class="flex flex-wrap gap-3 text-[11px] font-bold">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-200 border border-rose-400 inline-block"></span> Feriado oficial</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-200 border border-amber-400 inline-block"></span> Suspensión por CTE</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-indigo-200 border border-indigo-400 inline-block"></span> Periodo vacacional</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-200 border border-emerald-400 inline-block"></span> Inicio / fin de ciclo</span>
+          </div>
+        </div>
+      </div>
+      <div id="calendario-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      <div id="calendario-eventos" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-list text-amber-400"></i> Lista de suspensiones y periodos no lectivos</div>
+        <div class="p-5" id="calendario-lista"></div>
+      </div>
+    </section>
+
+    <!-- TAB: RESUMEN -->
+    <section id="tab-resumen" class="tab-view hidden space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Resumen de faltas del mes</div>
+        <div class="p-5 space-y-3">
+          <p class="text-xs text-slate-500 leading-relaxed">Calculado según los días con pase de lista cerrado. Riesgo ALTO = 5 faltas consecutivas o 7 acumuladas en el mes (Ley de Educación de Nuevo León).</p>
+          <div class="flex gap-2 flex-wrap">
+            <button id="btn-refresh-resumen" class="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-4 py-2 rounded-lg font-bold flex items-center gap-1.5"><i class="fa-solid fa-arrows-rotate"></i> Actualizar resumen</button>
+            <button id="btn-export-csv" class="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-4 py-2 rounded-lg font-bold flex items-center gap-1.5"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+          </div>
+          <div id="resumen-table"><p class="text-center py-6 text-slate-400 text-sm">Presiona "Actualizar resumen".</p></div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 text-white px-5 py-3 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Calificación de asistencia del trimestre <span class="ml-auto bg-amber-500 text-slate-900 text-[10px] px-2 py-1 rounded-full">Valor: 10 pts</span></div>
+        <div class="p-5 space-y-4">
+          <p class="text-xs text-slate-500 leading-relaxed">Selecciona el rango de fechas del trimestre para calcular la calificación de asistencia de cada alumno sobre 10 puntos, con base en los días de pase de lista cerrados en ese periodo.</p>
+          <div class="flex flex-wrap gap-3 items-end">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Inicio del trimestre</label>
+              <input type="date" id="tri-inicio" class="border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Fin del trimestre</label>
+              <input type="date" id="tri-fin" class="border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:border-indigo-500 outline-none">
+            </div>
+            <button id="btn-calc-trimestre" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-calculator"></i> Calcular calificación</button>
+          </div>
+          <div id="trimestre-table"><p class="text-center py-6 text-slate-400 text-sm">Selecciona un periodo y presiona "Calcular calificación".</p></div>
+          <button id="btn-export-excel" class="border border-emerald-500 text-emerald-700 hover:bg-emerald-50 text-xs px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Exportar lista de asistencia a Excel</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="text-center text-slate-400 text-[11px] py-3">Pase de Lista QR · Grupo 5° · Calendario oficial SEP / Secretaría de Educación de Nuevo León, ciclo 2026-2027.</div>
+</div>
+
+<script>
+// ---------------- ALMACENAMIENTO LOCAL DEL CELULAR/COMPUTADORA ----------------
+// Fuera del entorno de Claude no existe window.storage, así que aquí se recrea
+// la misma interfaz (get/set/delete/list) usando localStorage del navegador.
+// Los datos quedan guardados en ESTE dispositivo/navegador únicamente.
+if(!window.storage){
+  window.storage = {
+    async get(key, shared){
+      const raw = localStorage.getItem(key);
+      if(raw === null) throw new Error('key not found: ' + key);
+      return { key, value: raw, shared: !!shared };
+    },
+    async set(key, value, shared){
+      localStorage.setItem(key, value);
+      return { key, value, shared: !!shared };
+    },
+    async delete(key, shared){
+      localStorage.removeItem(key);
+      return { key, deleted: true, shared: !!shared };
+    },
+    async list(prefix, shared){
+      const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
+      return { keys, prefix, shared: !!shared };
+    }
+  };
+}
+
+// Registrar el service worker para que la app se pueda "Instalar" en el celular
+// y siga abriendo aunque no haya internet.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+const state = {
+  roster: [],
+  hoy: null,
+  scanning: false,
+  stream: null,
+  lastScan: {},
+  origenImport: null,
+  grupoInfo: { escuela: '', grupo: '5°' },
+};
+
+// Lista precargada a partir de "lista_alumnos_grupo.xlsx" (mismas columnas: N.º Lista / Nombre completo).
+// Si el archivo real del grupo tiene más alumnos, usa "Importar lista desde Excel" para reemplazarla.
+const DEFAULT_ROSTER = [
+  { num: 1, nombre: 'SHARON ANTONELLA AGUILAR AGUILAR' },
+  { num: 2, nombre: 'SOFIA ALESSANDRA ALVAREZ RODRIGUEZ' },
+  { num: 3, nombre: 'AMAYA  LUNA MATEO DANIEL' },
+  { num: 4, nombre: 'BENITEZ  ESQUIVEL DANNA FERNANDA' },
+];
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function nowTime(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmt(d){if(!d)return 'Sin fecha';let x=new Date(d+'T12:00:00');return x.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
+
+// ---------------- STORAGE HELPERS ----------------
+async function loadRoster(){
+  try{
+    const r = await window.storage.get('roster', false);
+    if(r){
+      state.roster = JSON.parse(r.value);
+    } else {
+      // Primera vez que se abre la app: precargar con la lista del Excel del grupo.
+      state.roster = DEFAULT_ROSTER.slice();
+      state.origenImport = 'Lista precargada desde lista_alumnos_grupo.xlsx';
+      await saveRoster();
+    }
+  }catch(e){ state.roster = []; }
+  try{
+    const o = await window.storage.get('origenImport', false);
+    if(o) state.origenImport = JSON.parse(o.value);
+  }catch(e){}
+}
+async function saveRoster(){
+  await window.storage.set('roster', JSON.stringify(state.roster), false);
+}
+async function saveOrigenImport(texto){
+  state.origenImport = texto;
+  await window.storage.set('origenImport', JSON.stringify(texto), false);
+  const el = document.getElementById('import-origen');
+  if(el) el.textContent = texto || '';
+}
+async function loadGrupoInfo(){
+  try{
+    const r = await window.storage.get('grupoInfo', false);
+    state.grupoInfo = r ? JSON.parse(r.value) : { escuela:'', grupo:'5°' };
+  }catch(e){ state.grupoInfo = { escuela:'', grupo:'5°' }; }
+  document.getElementById('in-escuela').value = state.grupoInfo.escuela || '';
+  document.getElementById('in-grupo').value = state.grupoInfo.grupo || '5°';
+}
+async function saveGrupoInfo(){
+  state.grupoInfo = {
+    escuela: document.getElementById('in-escuela').value.trim(),
+    grupo: document.getElementById('in-grupo').value.trim() || '5°',
+  };
+  await window.storage.set('grupoInfo', JSON.stringify(state.grupoInfo), false);
+}
+document.getElementById('in-escuela').addEventListener('change', saveGrupoInfo);
+document.getElementById('in-grupo').addEventListener('change', saveGrupoInfo);
+async function loadHoy(){
+  const key = 'asistencia:' + todayStr();
+  try{
+    const r = await window.storage.get(key, false);
+    state.hoy = r ? JSON.parse(r.value) : {};
+  }catch(e){ state.hoy = {}; }
+}
+async function saveHoy(){
+  const key = 'asistencia:' + todayStr();
+  await window.storage.set(key, JSON.stringify(state.hoy), false);
+}
+
+// ---------------- TABS ----------------
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const tab = btn.dataset.tab;
+  document.querySelectorAll('nav#tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['alumnos','codigos','escanear','calendario','resumen'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+  });
+  if(tab==='codigos') renderQRGrid();
+  if(tab==='escanear') renderHoyTable();
+  if(tab==='calendario') renderCalendario();
+});
+
+// ---------------- PILLS / BADGES ----------------
+function pillRiesgo(r){
+  const map={alto:'bg-rose-100 text-rose-700 border-rose-200', medio:'bg-amber-100 text-amber-700 border-amber-200', bajo:'bg-emerald-100 text-emerald-700 border-emerald-200'};
+  return `<span class="inline-block text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border ${map[r]}">${r.toUpperCase()}</span>`;
+}
+function pillEstado(status){
+  if(status==='presente') return '<span class="inline-block text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border bg-emerald-100 text-emerald-700 border-emerald-200">Presente</span>';
+  if(status==='ausente') return '<span class="inline-block text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border bg-rose-100 text-rose-700 border-rose-200">Ausente</span>';
+  return '<span class="inline-block text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border bg-slate-100 text-slate-500 border-slate-200">Pendiente</span>';
+}
+
+// ---------------- ALUMNOS ----------------
+function renderRosterTable(){
+  const el = document.getElementById('roster-table');
+  document.getElementById('roster-count').textContent = state.roster.length;
+  const origenEl = document.getElementById('import-origen');
+  if(origenEl) origenEl.textContent = state.origenImport || '';
+  if(state.roster.length===0){
+    el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">Aún no hay alumnos registrados.</p>';
+    return;
+  }
+  let html = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500 uppercase text-[10px] border-b border-slate-200"><th class="py-2 pr-2">N.º</th><th class="py-2 pr-2">Nombre</th><th class="py-2 pr-2"></th></tr></thead><tbody>';
+  state.roster.sort((a,b)=>a.num-b.num).forEach(a=>{
+    html += `<tr class="border-b border-slate-100"><td class="py-2 pr-2 font-bold text-slate-700">${a.num}</td><td class="py-2 pr-2">${esc(a.nombre)}</td><td class="py-2 pr-2 text-right"><button class="border border-rose-300 text-rose-700 hover:bg-rose-50 text-[11px] px-2.5 py-1 rounded-lg font-bold" data-del="${a.num}">Eliminar</button></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+  el.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const num = parseInt(btn.dataset.del);
+      state.roster = state.roster.filter(a=>a.num!==num);
+      await saveRoster();
+      renderRosterTable();
+    });
+  });
+}
+
+document.getElementById('btn-add-alumno').addEventListener('click', async ()=>{
+  const num = parseInt(document.getElementById('in-num').value);
+  const nombre = document.getElementById('in-nombre').value.trim();
+  const status = document.getElementById('add-status');
+  if(!num || !nombre){
+    status.textContent = 'Ingresa número de lista y nombre.';
+    status.className = 'text-xs font-semibold text-rose-600';
+    return;
+  }
+  if(state.roster.some(a=>a.num===num)){
+    status.textContent = 'Ese número de lista ya existe.';
+    status.className = 'text-xs font-semibold text-rose-600';
+    return;
+  }
+  state.roster.push({num, nombre});
+  await saveRoster();
+  document.getElementById('in-num').value='';
+  document.getElementById('in-nombre').value='';
+  status.textContent = 'Alumno agregado.';
+  status.className = 'text-xs font-semibold text-emerald-600';
+  renderRosterTable();
+});
+
+document.getElementById('btn-export-roster-excel').addEventListener('click', ()=>{
+  if(state.roster.length===0){ alert('Agrega alumnos primero.'); return; }
+  const rows = [['N.º Lista','Nombre completo']];
+  state.roster.slice().sort((a,b)=>a.num-b.num).forEach(a=>rows.push([a.num, a.nombre]));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:8},{wch:32}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lista de alumnos');
+  XLSX.writeFile(wb, 'lista_alumnos_grupo.xlsx');
+});
+
+// ---------------- IMPORTAR DESDE EXCEL ----------------
+function parseRosterFromSheet(ws){
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const nuevos = [];
+  let colNum = 0, colNombre = 1, startRow = 0;
+
+  // Buscar fila de encabezado ("N.º Lista" / "Nombre completo") para ubicar columnas correctas
+  // aunque el archivo tenga columnas en otro orden o columnas extra.
+  for(let i=0; i<Math.min(rows.length, 5); i++){
+    const row = rows[i].map(c=>String(c).toLowerCase());
+    const idxNum = row.findIndex(c=>c.includes('lista') || c.includes('n.º') || c.includes('no.') || c==='#');
+    const idxNombre = row.findIndex(c=>c.includes('nombre'));
+    if(idxNombre !== -1){
+      colNombre = idxNombre;
+      colNum = idxNum !== -1 ? idxNum : colNombre - 1;
+      startRow = i + 1;
+      break;
+    }
+  }
+
+  for(let i=startRow; i<rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length===0) continue;
+    const nombre = String(row[colNombre] ?? '').trim();
+    let num = parseInt(row[colNum]);
+    if(!nombre) continue;
+    if(isNaN(num)) num = nuevos.length + 1;
+    nuevos.push({ num, nombre });
+  }
+  return nuevos;
+}
+
+document.getElementById('in-file-excel').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  const status = document.getElementById('import-status');
+  if(!file) return;
+  try{
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const nuevos = parseRosterFromSheet(ws);
+    if(nuevos.length === 0){
+      status.textContent = 'No se encontraron alumnos válidos en el archivo.';
+      status.className = 'text-xs font-semibold text-rose-600';
+      return;
+    }
+    if(state.roster.length > 0){
+      const ok = confirm(`Se importarán ${nuevos.length} alumno(s) desde "${file.name}" y se reemplazará la lista actual (${state.roster.length} alumno(s)). ¿Continuar?`);
+      if(!ok){ e.target.value = ''; return; }
+    }
+    state.roster = nuevos;
+    await saveRoster();
+    await saveOrigenImport(`Importado de "${file.name}" el ${fmt(todayStr())}`);
+    renderRosterTable();
+    status.textContent = `${nuevos.length} alumno(s) importado(s) correctamente.`;
+    status.className = 'text-xs font-semibold text-emerald-600';
+  }catch(err){
+    status.textContent = 'No se pudo leer el archivo. Verifica que sea un .xlsx válido.';
+    status.className = 'text-xs font-semibold text-rose-600';
+  }
+  e.target.value = '';
+});
+
+// ---------------- CODIGOS QR ----------------
+function renderQRGrid(){
+  const grid = document.getElementById('qr-grid');
+  grid.innerHTML = '';
+  if(state.roster.length===0){
+    grid.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm col-span-full">Agrega alumnos primero en la pestaña "Alumnos".</p>';
+    return;
+  }
+  state.roster.sort((a,b)=>a.num-b.num).forEach(a=>{
+    const card = document.createElement('div');
+    card.className = 'border-2 border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center gap-1 bg-white';
+    const qrDiv = document.createElement('div');
+    card.appendChild(qrDiv);
+    const name = document.createElement('div');
+    name.className = 'text-xs font-bold text-slate-800 text-center mt-1';
+    name.textContent = a.nombre;
+    const num = document.createElement('div');
+    num.className = 'text-[11px] text-slate-500';
+    num.textContent = 'Lista #' + a.num;
+    card.appendChild(name);
+    card.appendChild(num);
+    grid.appendChild(card);
+    new QRCode(qrDiv, {
+      text: 'ALUM-' + a.num,
+      width: 96,
+      height: 96,
+      colorDark: '#1e1b4b',
+      colorLight: '#ffffff'
+    });
+  });
+}
+document.getElementById('btn-print').addEventListener('click', ()=>window.print());
+
+// ---------------- EXPORTAR QR A PDF (fácil y rápido) ----------------
+async function generarDataURLsQR(alumnos){
+  // Genera cada QR en un contenedor oculto a buena resolución para que se vea nítido al imprimir.
+  const hidden = document.createElement('div');
+  hidden.style.position = 'fixed';
+  hidden.style.left = '-9999px';
+  document.body.appendChild(hidden);
+  const salida = [];
+  for(const a of alumnos){
+    const div = document.createElement('div');
+    hidden.appendChild(div);
+    new QRCode(div, {
+      text: 'ALUM-' + a.num,
+      width: 240,
+      height: 240,
+      colorDark: '#1e1b4b',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    const canvas = div.querySelector('canvas');
+    salida.push({ ...a, dataUrl: canvas ? canvas.toDataURL('image/png') : null });
+  }
+  document.body.removeChild(hidden);
+  return salida;
+}
+
+document.getElementById('btn-export-pdf').addEventListener('click', async ()=>{
+  const status = document.getElementById('pdf-status');
+  if(state.roster.length===0){
+    status.textContent = 'Agrega alumnos primero en la pestaña "Alumnos".';
+    status.className = 'text-xs font-semibold text-rose-600';
+    return;
+  }
+  const btn = document.getElementById('btn-export-pdf');
+  btn.disabled = true;
+  status.textContent = 'Generando PDF...';
+  status.className = 'text-xs font-semibold text-slate-500';
+
+  await new Promise(r=>setTimeout(r, 30)); // deja pintar el mensaje antes del trabajo pesado
+
+  const alumnos = state.roster.slice().sort((a,b)=>a.num-b.num);
+  const codigos = await generarDataURLsQR(alumnos);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 10;
+  const cols = 3, rowsPerPage = 4;
+  const cellW = (pageW - margin*2) / cols;
+  const cellH = (pageH - margin*2 - 12) / rowsPerPage; // 12mm reservados para encabezado de página
+  const qrSize = Math.min(cellW, cellH) * 0.62;
+
+  const escuela = state.grupoInfo.escuela || '';
+  const grupo = state.grupoInfo.grupo || '';
+
+  function pintarEncabezado(){
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30,27,75);
+    doc.text(escuela ? `${escuela} — Grupo ${grupo}` : `Códigos QR de asistencia — Grupo ${grupo}`, margin, margin);
+    doc.setDrawColor(200,200,200);
+    doc.line(margin, margin+2, pageW-margin, margin+2);
+  }
+
+  let col = 0, row = 0;
+  pintarEncabezado();
+  const startY = margin + 12;
+
+  codigos.forEach((a, i)=>{
+    if(i>0 && col===0 && row===0){ /* nueva página ya manejada abajo */ }
+    const x = margin + col*cellW;
+    const y = startY + row*cellH;
+
+    // Tarjeta con marcas de corte en las esquinas
+    doc.setDrawColor(180,180,190);
+    doc.setLineWidth(0.2);
+    doc.rect(x+2, y+2, cellW-4, cellH-4);
+
+    // QR centrado
+    const qrX = x + (cellW - qrSize)/2;
+    if(a.dataUrl) doc.addImage(a.dataUrl, 'PNG', qrX, y+4, qrSize, qrSize);
+
+    // Nombre (ajustado a 2 líneas si es necesario)
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30,41,59);
+    const nombreLineas = doc.splitTextToSize(a.nombre, cellW-8);
+    doc.text(nombreLineas.slice(0,2), x + cellW/2, y+4+qrSize+4, { align:'center' });
+
+    // Número de lista
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100,116,139);
+    doc.text(`Lista #${a.num}`, x + cellW/2, y+4+qrSize+4+(nombreLineas.length>1?7.5:4), { align:'center' });
+
+    col++;
+    if(col>=cols){ col=0; row++; }
+    if(row>=rowsPerPage && i < codigos.length-1){
+      row = 0; col = 0;
+      doc.addPage();
+      pintarEncabezado();
+    }
+  });
+
+  const nombreArchivo = 'codigos_qr_grupo' + (grupo ? '_'+grupo.replace(/\s+/g,'') : '') + '.pdf';
+  doc.save(nombreArchivo);
+
+  btn.disabled = false;
+  status.textContent = `PDF generado con ${codigos.length} código(s). Listo para imprimir y recortar.`;
+  status.className = 'text-xs font-semibold text-emerald-600';
+});
+
+// ---------------- ESCANEAR ----------------
+document.getElementById('fecha-hoy').textContent = fmt(todayStr());
+
+function renderHoyTable(){
+  const el = document.getElementById('hoy-table');
+  const entries = Object.entries(state.hoy || {});
+  document.getElementById('count-total').textContent = state.roster.length;
+  document.getElementById('count-presentes').textContent = entries.filter(([k,v])=>v.status==='presente').length;
+
+  if(state.roster.length===0){
+    el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">Agrega alumnos primero.</p>';
+    return;
+  }
+  let html = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500 uppercase text-[10px] border-b border-slate-200"><th class="py-2 pr-2">N.º</th><th class="py-2 pr-2">Nombre</th><th class="py-2 pr-2">Estado</th><th class="py-2 pr-2">Hora</th></tr></thead><tbody>';
+  state.roster.sort((a,b)=>a.num-b.num).forEach(a=>{
+    const rec = state.hoy[a.num];
+    html += `<tr class="border-b border-slate-100"><td class="py-2 pr-2 font-bold text-slate-700">${a.num}</td><td class="py-2 pr-2">${esc(a.nombre)}</td><td class="py-2 pr-2">${pillEstado(rec?rec.status:null)}</td><td class="py-2 pr-2 text-slate-500">${rec ? rec.hora : '—'}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+let videoStream = null, scanLoopId = null;
+const video = document.getElementById('scan-video');
+const canvas = document.getElementById('scan-canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+function mostrarAyudaCamara(mensaje, detalle){
+  const status = document.getElementById('scan-status');
+  status.className = 'scan-status bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+  status.textContent = mensaje;
+  const help = document.getElementById('cam-help');
+  help.classList.remove('hidden');
+  help.innerHTML = detalle;
+}
+
+async function iniciarCamara(){
+  // 1) La API de cámara solo existe en contexto seguro (https:// o localhost).
+  //    Si el archivo se abrió como archivo local (file://) o por http:// sin certificado,
+  //    el navegador ni siquiera expone navigator.mediaDevices.
+  if(!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    mostrarAyudaCamara(
+      'Este navegador no permite usar la cámara en esta página.',
+      '<b>Causa más común:</b> la página se abrió como archivo local o desde una dirección sin https://.<br>' +
+      '<b>Solución:</b> abre este archivo desde un enlace que empiece con <code>https://</code> (por ejemplo, súbelo a Claude, Google Drive o un hosting), o ábrelo en <code>localhost</code> si lo estás probando en tu computadora. Los navegadores bloquean la cámara por seguridad en cualquier otro caso.'
+    );
+    return;
+  }
+
+  // 2) Intentar primero la cámara trasera (mejor para enfocar el QR); si el dispositivo
+  //    no tiene una cámara "environment" (común en laptops), usar cualquier cámara disponible.
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+  }catch(e1){
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }catch(e2){
+      manejarErrorCamara(e2);
+      return;
+    }
+  }
+
+  videoStream = stream;
+  video.srcObject = videoStream;
+  video.classList.remove('hidden');
+  document.getElementById('cam-help').classList.add('hidden');
+  try{ await video.play(); }catch(e){}
+  document.getElementById('btn-start-cam').classList.add('hidden');
+  document.getElementById('btn-stop-cam').classList.remove('hidden');
+  const status = document.getElementById('scan-status');
+  status.className = 'scan-status bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+  status.textContent = 'Cámara activa. Enfoca el código QR del alumno.';
+  scanLoop();
+}
+
+function manejarErrorCamara(e){
+  const nombre = e && e.name ? e.name : '';
+  let mensaje = 'No se pudo acceder a la cámara.';
+  let detalle = `Detalle técnico: ${e && e.message ? e.message : e}`;
+  if(nombre === 'NotAllowedError' || nombre === 'PermissionDeniedError'){
+    mensaje = 'El navegador bloqueó el permiso de cámara.';
+    detalle = 'Revisa el ícono de candado o cámara en la barra de direcciones y cambia el permiso de cámara a "Permitir", luego vuelve a presionar "Activar cámara". En Android/iOS revisa también Ajustes del sistema &gt; permisos de la app o navegador.';
+  } else if(nombre === 'NotFoundError' || nombre === 'DevicesNotFoundError'){
+    mensaje = 'No se encontró ninguna cámara en este dispositivo.';
+    detalle = 'Verifica que el dispositivo tenga una cámara disponible y que ninguna otra pestaña o aplicación la esté usando.';
+  } else if(nombre === 'NotReadableError' || nombre === 'TrackStartError'){
+    mensaje = 'La cámara está siendo usada por otra aplicación o pestaña.';
+    detalle = 'Cierra otras aplicaciones o pestañas que puedan estar usando la cámara (videollamadas, otra pestaña con este mismo pase de lista, etc.) e inténtalo de nuevo.';
+  } else if(nombre === 'OverconstrainedError' || nombre === 'ConstraintNotSatisfiedError'){
+    mensaje = 'No se pudo configurar la cámara solicitada.';
+    detalle = 'Se intentó usar la cámara trasera y no fue posible. Vuelve a presionar "Activar cámara"; la app ahora también intenta con cualquier cámara disponible.';
+  } else if(nombre === 'SecurityError'){
+    mensaje = 'El navegador bloqueó la cámara por seguridad.';
+    detalle = 'Asegúrate de abrir esta página con https:// (no como archivo local) y de no estar dentro de un iframe que restrinja el acceso a la cámara.';
+  }
+  mostrarAyudaCamara(mensaje, detalle);
+}
+
+document.getElementById('btn-start-cam').addEventListener('click', iniciarCamara);
+document.getElementById('btn-stop-cam').addEventListener('click', stopCamera);
+
+function stopCamera(){
+  if(videoStream){ videoStream.getTracks().forEach(t=>t.stop()); videoStream=null; }
+  if(scanLoopId) cancelAnimationFrame(scanLoopId);
+  video.classList.add('hidden');
+  document.getElementById('btn-start-cam').classList.remove('hidden');
+  document.getElementById('btn-stop-cam').classList.add('hidden');
+  document.getElementById('cam-help').classList.add('hidden');
+}
+
+function scanLoop(){
+  if(!videoStream) return;
+  if(video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height);
+    if(code && code.data){
+      handleScan(code.data);
+    }
+  }
+  scanLoopId = requestAnimationFrame(scanLoop);
+}
+
+async function handleScan(text){
+  const statusEl = document.getElementById('scan-status');
+  const match = /^ALUM-(\d+)$/.exec(text.trim());
+  if(!match){
+    statusEl.className = 'scan-status bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+    statusEl.textContent = 'Código no reconocido.';
+    return;
+  }
+  const num = parseInt(match[1]);
+  const now = Date.now();
+  if(state.lastScan[num] && (now - state.lastScan[num] < 3000)) return;
+  state.lastScan[num] = now;
+
+  const alumno = state.roster.find(a=>a.num===num);
+  if(!alumno){
+    statusEl.className = 'scan-status bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+    statusEl.textContent = `Alumno #${num} no está registrado en la lista.`;
+    return;
+  }
+  if(state.hoy[num] && state.hoy[num].status==='presente'){
+    statusEl.className = 'scan-status bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+    statusEl.textContent = `${alumno.nombre} ya estaba registrado (${state.hoy[num].hora}).`;
+    return;
+  }
+  state.hoy[num] = { status:'presente', hora: nowTime() };
+  await saveHoy();
+  statusEl.className = 'scan-status bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3 text-sm font-semibold min-h-[20px]';
+  statusEl.textContent = `✔ Registrado: ${alumno.nombre} — ${nowTime()}`;
+  renderHoyTable();
+}
+
+document.getElementById('btn-cerrar-dia').addEventListener('click', async ()=>{
+  if(state.roster.length===0) return;
+  let cambios = 0;
+  state.roster.forEach(a=>{
+    if(!state.hoy[a.num]){
+      state.hoy[a.num] = { status:'ausente', hora:'—' };
+      cambios++;
+    }
+  });
+  await saveHoy();
+  renderHoyTable();
+  const s = document.getElementById('cerrar-status');
+  s.textContent = `Día cerrado. ${cambios} alumno(s) marcados como ausentes.`;
+  s.className = 'text-xs font-semibold text-emerald-600';
+});
+
+// ---------------- CALENDARIO OFICIAL NL 2026-2027 ----------------
+const EVENTOS_CALENDARIO = [
+  {fecha:'2026-08-24', fechaFin:'2026-08-28', tipo:'cte', label:'Fase intensiva de Consejo Técnico Escolar (solo personal docente)'},
+  {fecha:'2026-08-31', tipo:'inicio', label:'Inicio de clases del ciclo 2026-2027'},
+  {fecha:'2026-09-16', tipo:'feriado', label:'Aniversario de la Independencia de México'},
+  {fecha:'2026-09-25', tipo:'cte', label:'CTE — 1.ª sesión ordinaria'},
+  {fecha:'2026-10-30', tipo:'cte', label:'CTE — 2.ª sesión ordinaria'},
+  {fecha:'2026-11-16', tipo:'feriado', label:'Aniversario de la Revolución Mexicana'},
+  {fecha:'2026-11-27', tipo:'cte', label:'CTE — 3.ª sesión ordinaria'},
+  {fecha:'2026-12-21', fechaFin:'2027-01-06', tipo:'vacaciones', label:'Vacaciones de invierno (regreso a clases el 7 de enero)'},
+  {fecha:'2027-01-29', tipo:'cte', label:'CTE — 4.ª sesión ordinaria'},
+  {fecha:'2027-02-02', tipo:'feriado', label:'Día de la Constitución Mexicana'},
+  {fecha:'2027-02-26', tipo:'cte', label:'CTE — 5.ª sesión ordinaria'},
+  {fecha:'2027-03-16', tipo:'feriado', label:'Natalicio de Benito Juárez'},
+  {fecha:'2027-03-22', fechaFin:'2027-04-02', tipo:'vacaciones', label:'Vacaciones de Semana Santa (regreso a clases el 5 de abril)'},
+  {fecha:'2027-04-30', tipo:'cte', label:'CTE — 6.ª sesión ordinaria'},
+  {fecha:'2027-05-01', tipo:'feriado', label:'Día del Trabajo'},
+  {fecha:'2027-05-28', tipo:'cte', label:'CTE — 7.ª sesión ordinaria'},
+  {fecha:'2027-06-25', tipo:'cte', label:'CTE — 8.ª sesión ordinaria'},
+  {fecha:'2027-07-09', tipo:'fin', label:'Fin del ciclo escolar 2026-2027'},
+];
+const ESTILO_TIPO = {
+  feriado:'bg-rose-100 text-rose-700',
+  cte:'bg-amber-100 text-amber-700',
+  vacaciones:'bg-indigo-100 text-indigo-700',
+  inicio:'bg-emerald-100 text-emerald-700',
+  fin:'bg-emerald-100 text-emerald-700',
+};
+let mapaCalendario = null;
+function buildEventMap(){
+  const map = {};
+  EVENTOS_CALENDARIO.forEach(e=>{
+    if(e.fechaFin){
+      let d = new Date(e.fecha+'T12:00:00');
+      const end = new Date(e.fechaFin+'T12:00:00');
+      while(d<=end){
+        const key = d.toISOString().slice(0,10);
+        (map[key]=map[key]||[]).push(e);
+        d.setDate(d.getDate()+1);
+      }
+    } else {
+      (map[e.fecha]=map[e.fecha]||[]).push(e);
+    }
+  });
+  return map;
+}
+function monthCardHTML(y, m, map){
+  const first = new Date(y, m, 1);
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startDow = first.getDay();
+  const nombreMes = first.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  let cells = '';
+  ['D','L','M','M','J','V','S'].forEach(d=>{ cells += `<div class="text-[9px] font-bold text-slate-400 text-center uppercase">${d}</div>`; });
+  for(let i=0;i<startDow;i++) cells += '<div></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs = map[key];
+    let cls = 'text-slate-500';
+    let title = '';
+    if(evs && evs.length){
+      cls = (ESTILO_TIPO[evs[0].tipo]||'bg-slate-100 text-slate-700') + ' font-bold';
+      title = evs.map(e=>e.label).join(' · ');
+    }
+    cells += `<div class="aspect-square flex items-center justify-center rounded-md text-[10px] ${cls}" title="${esc(title)}">${d}</div>`;
+  }
+  return `<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-3">
+    <div class="text-xs font-black text-slate-800 capitalize mb-2">${nombreMes}</div>
+    <div class="grid grid-cols-7 gap-1">${cells}</div>
+  </div>`;
+}
+function renderCalendario(){
+  if(!mapaCalendario) mapaCalendario = buildEventMap();
+  const container = document.getElementById('calendario-grid');
+  const meses = [[2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2027,0],[2027,1],[2027,2],[2027,3],[2027,4],[2027,5],[2027,6]];
+  container.innerHTML = meses.map(([y,m])=>monthCardHTML(y,m,mapaCalendario)).join('');
+
+  const lista = document.getElementById('calendario-lista');
+  let html = '<div class="space-y-2">';
+  EVENTOS_CALENDARIO.forEach(e=>{
+    const rango = e.fechaFin ? `${fmt(e.fecha)} — ${fmt(e.fechaFin)}` : fmt(e.fecha);
+    const pill = (ESTILO_TIPO[e.tipo]||'bg-slate-100 text-slate-700');
+    html += `<div class="flex items-center gap-3 border-b border-slate-100 pb-2">
+      <span class="inline-block text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${pill} whitespace-nowrap">${e.tipo}</span>
+      <span class="text-xs text-slate-500 whitespace-nowrap">${rango}</span>
+      <span class="text-xs text-slate-700 font-semibold">${esc(e.label)}</span>
+    </div>`;
+  });
+  html += '</div>';
+  lista.innerHTML = html;
+}
+
+// ---------------- RESUMEN MENSUAL ----------------
+async function computeResumen(){
+  const listRes = await window.storage.list('asistencia:', false);
+  const keys = listRes ? listRes.keys : [];
+  const porAlumno = {};
+  state.roster.forEach(a=>{ porAlumno[a.num] = { nombre:a.nombre, registros: [] }; });
+
+  const registros = [];
+  for(const key of keys){
+    const r = await window.storage.get(key, false);
+    if(!r) continue;
+    const fecha = key.split(':')[1];
+    const data = JSON.parse(r.value);
+    registros.push({fecha, data});
+  }
+  registros.sort((a,b)=> a.fecha.localeCompare(b.fecha));
+
+  registros.forEach(({fecha, data})=>{
+    Object.entries(data).forEach(([num, rec])=>{
+      num = parseInt(num);
+      if(!porAlumno[num]) return;
+      porAlumno[num].registros.push({fecha, status: rec.status});
+    });
+  });
+
+  const mesActual = todayStr().slice(0,7);
+  const resumen = Object.entries(porAlumno).map(([num, info])=>{
+    const delMes = info.registros.filter(r=>r.fecha.startsWith(mesActual));
+    const acumuladas = delMes.filter(r=>r.status==='ausente').length;
+    let consecutivas = 0;
+    for(let i=delMes.length-1; i>=0; i--){
+      if(delMes[i].status==='ausente') consecutivas++;
+      else break;
+    }
+    let riesgo = 'bajo';
+    if(consecutivas>=5 || acumuladas>=7) riesgo='alto';
+    else if(consecutivas>=3 || acumuladas>=4) riesgo='medio';
+    return { num: parseInt(num), nombre: info.nombre, diasRegistrados: delMes.length, acumuladas, consecutivas, riesgo };
+  }).sort((a,b)=>a.num-b.num);
+
+  return resumen;
+}
+
+let ultimoResumen = [];
+
+document.getElementById('btn-refresh-resumen').addEventListener('click', async ()=>{
+  const el = document.getElementById('resumen-table');
+  el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">Calculando...</p>';
+  ultimoResumen = await computeResumen();
+  if(ultimoResumen.length===0){
+    el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">No hay alumnos o registros todavía.</p>';
+    return;
+  }
+  let html = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500 uppercase text-[10px] border-b border-slate-200"><th class="py-2 pr-2">N.º</th><th class="py-2 pr-2">Nombre</th><th class="py-2 pr-2">Días</th><th class="py-2 pr-2">Faltas acum.</th><th class="py-2 pr-2">Faltas consec.</th><th class="py-2 pr-2">Riesgo</th></tr></thead><tbody>';
+  ultimoResumen.forEach(r=>{
+    html += `<tr class="border-b border-slate-100"><td class="py-2 pr-2 font-bold text-slate-700">${r.num}</td><td class="py-2 pr-2">${esc(r.nombre)}</td><td class="py-2 pr-2">${r.diasRegistrados}</td><td class="py-2 pr-2">${r.acumuladas}</td><td class="py-2 pr-2">${r.consecutivas}</td><td class="py-2 pr-2">${pillRiesgo(r.riesgo)}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+});
+
+document.getElementById('btn-export-csv').addEventListener('click', async ()=>{
+  if(ultimoResumen.length===0){
+    ultimoResumen = await computeResumen();
+  }
+  let csv = 'N.º Lista,Nombre,Dias Registrados,Faltas Acumuladas Mes,Faltas Consecutivas,Riesgo\n';
+  ultimoResumen.forEach(r=>{
+    csv += `${r.num},"${r.nombre}",${r.diasRegistrados},${r.acumuladas},${r.consecutivas},${r.riesgo.toUpperCase()}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'resumen_asistencia_' + todayStr() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ---------------- CALIFICACIÓN DEL TRIMESTRE (10 PTS) ----------------
+async function computeTrimestre(inicio, fin){
+  const listRes = await window.storage.list('asistencia:', false);
+  const keys = (listRes ? listRes.keys : []).filter(k=>{
+    const f = k.split(':')[1];
+    return f>=inicio && f<=fin;
+  }).sort();
+
+  const registros = [];
+  for(const key of keys){
+    const r = await window.storage.get(key, false);
+    if(!r) continue;
+    registros.push({fecha: key.split(':')[1], data: JSON.parse(r.value)});
+  }
+
+  const porAlumno = {};
+  state.roster.forEach(a=>{ porAlumno[a.num] = { nombre:a.nombre, presentes:0, faltas:0 }; });
+  registros.forEach(({data})=>{
+    Object.entries(data).forEach(([num, rec])=>{
+      num = parseInt(num);
+      if(!porAlumno[num]) return;
+      if(rec.status==='presente') porAlumno[num].presentes++;
+      else porAlumno[num].faltas++;
+    });
+  });
+
+  const resultado = Object.entries(porAlumno).map(([num, info])=>{
+    const total = info.presentes + info.faltas;
+    const pct = total>0 ? info.presentes/total : 0;
+    const calificacion = total>0 ? Math.round(pct*100)/10 : 0;
+    return {
+      num: parseInt(num), nombre: info.nombre, diasRegistrados: total,
+      presentes: info.presentes, faltas: info.faltas,
+      porcentaje: Math.round(pct*1000)/10, calificacion
+    };
+  }).sort((a,b)=>a.num-b.num);
+
+  return { diasRegistrados: keys.length, keys, resultado };
+}
+
+let ultimoTrimestre = null;
+
+document.getElementById('btn-calc-trimestre').addEventListener('click', async ()=>{
+  const ini = document.getElementById('tri-inicio').value;
+  const fin = document.getElementById('tri-fin').value;
+  const el = document.getElementById('trimestre-table');
+  if(!ini || !fin){
+    el.innerHTML = '<p class="text-center py-6 text-rose-600 text-sm font-semibold">Selecciona la fecha de inicio y fin del trimestre.</p>';
+    return;
+  }
+  el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">Calculando...</p>';
+  ultimoTrimestre = await computeTrimestre(ini, fin);
+  if(ultimoTrimestre.diasRegistrados===0){
+    el.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">No hay pases de lista cerrados en ese periodo.</p>';
+    return;
+  }
+  let html = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500 uppercase text-[10px] border-b border-slate-200"><th class="py-2 pr-2">N.º</th><th class="py-2 pr-2">Nombre</th><th class="py-2 pr-2">Días</th><th class="py-2 pr-2">Presentes</th><th class="py-2 pr-2">Faltas</th><th class="py-2 pr-2">% Asist.</th><th class="py-2 pr-2">Calif. (10 pts)</th></tr></thead><tbody>';
+  ultimoTrimestre.resultado.forEach(r=>{
+    const color = r.calificacion>=9?'text-emerald-700':r.calificacion>=7?'text-amber-700':'text-rose-700';
+    html += `<tr class="border-b border-slate-100"><td class="py-2 pr-2 font-bold text-slate-700">${r.num}</td><td class="py-2 pr-2">${esc(r.nombre)}</td><td class="py-2 pr-2">${r.diasRegistrados}</td><td class="py-2 pr-2 text-emerald-700 font-bold">${r.presentes}</td><td class="py-2 pr-2 text-rose-700 font-bold">${r.faltas}</td><td class="py-2 pr-2">${r.porcentaje}%</td><td class="py-2 pr-2 font-black ${color}">${r.calificacion.toFixed(1)}</td></tr>`;
+  });
+  html += `</tbody></table></div><p class="text-[11px] text-slate-400 mt-2">Días con pase de lista cerrado en el periodo: ${ultimoTrimestre.diasRegistrados}. Calificación = (presentes ÷ días registrados) × 10.</p>`;
+  el.innerHTML = html;
+});
+
+document.getElementById('btn-export-excel').addEventListener('click', async ()=>{
+  const ini = document.getElementById('tri-inicio').value;
+  const fin = document.getElementById('tri-fin').value;
+  const listRes = await window.storage.list('asistencia:', false);
+  let keys = (listRes ? listRes.keys : []).map(k=>k.split(':')[1]).sort();
+  if(ini && fin) keys = keys.filter(f=>f>=ini && f<=fin);
+  if(keys.length===0){
+    alert('No hay pases de lista registrados' + (ini && fin ? ' en el periodo seleccionado.' : '.'));
+    return;
+  }
+  const registros = {};
+  for(const f of keys){
+    const r = await window.storage.get('asistencia:'+f, false);
+    registros[f] = r ? JSON.parse(r.value) : {};
+  }
+  const alumnos = state.roster.slice().sort((a,b)=>a.num-b.num);
+  const header = ['N.º Lista','Nombre', ...keys.map(f=>fmt(f)), 'Presentes','Faltas','% Asistencia','Calificación (10 pts)'];
+  const rows = [header];
+  alumnos.forEach(a=>{
+    let presentes=0, faltas=0;
+    const marks = keys.map(f=>{
+      const rec = registros[f][a.num];
+      if(!rec) return '';
+      if(rec.status==='presente'){ presentes++; return 'P'; }
+      faltas++; return 'A';
+    });
+    const total = presentes+faltas;
+    const pct = total>0 ? Math.round((presentes/total)*1000)/10 : 0;
+    const calif = total>0 ? Math.round((presentes/total)*100)/10 : 0;
+    rows.push([a.num, a.nombre, ...marks, presentes, faltas, pct+'%', calif.toFixed(1)]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:6},{wch:26}, ...keys.map(()=>({wch:9})), {wch:10},{wch:8},{wch:12},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lista de asistencia');
+  const nombreArchivo = 'lista_asistencia' + (ini && fin ? `_${ini}_a_${fin}` : '_completa') + '.xlsx';
+  XLSX.writeFile(wb, nombreArchivo);
+});
+
+// ---------------- INIT ----------------
+(async function init(){
+  await loadRoster();
+  await loadHoy();
+  await loadGrupoInfo();
+  renderRosterTable();
+  renderHoyTable();
+})();
+</script>
+
+</body>
+</html>
